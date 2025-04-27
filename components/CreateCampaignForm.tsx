@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { uploadToIPFS } from '../utils/upload';
+import { useState } from "react";
+import { uploadFileToIPFS } from "../utils/ipfs";
 
 export default function CreateCampaignForm() {
-  const [title, setTitle] = useState('');
-  const [goalAmount, setGoalAmount] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [title, setTitle] = useState("");
+  const [goalAmount, setGoalAmount] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -15,13 +15,13 @@ export default function CreateCampaignForm() {
     setLoading(true);
     try {
       if (!file) {
-        alert('Please upload a file.');
+        alert("Please upload a file.");
         return;
       }
 
-      const fileUrl = await uploadToIPFS(file);
+      const fileUrl = await uploadFileToIPFS(file);
 
-      console.log('Uploading campaign:', {
+      console.log("Uploading campaign:", {
         title,
         goalAmount,
         deadline,
@@ -78,7 +78,7 @@ export default function CreateCampaignForm() {
         disabled={loading}
         className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
       >
-        {loading ? 'Creating...' : 'Create Campaign'}
+        {loading ? "Creating..." : "Create Campaign"}
       </button>
     </form>
   );
