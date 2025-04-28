@@ -1,6 +1,6 @@
 import { Contract } from 'ethers';
 import { parseEther } from 'ethers';
-import memeCampaignManagerAbi from '../abi/memeCampaignManagerAbi.json';
+import memeCampaignManagerAbi from '../abi/MemeCampaignManager.json';
 import { MEME_CAMPAIGN_MANAGER_ADDRESS } from '../utils/constants';
 
 interface CreateCampaignParams {

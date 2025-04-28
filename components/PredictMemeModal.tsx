@@ -5,7 +5,9 @@ interface PredictMemeModalProps {
   campaignId: string;
 }
 
-export default function PredictMemeModal({ campaignId }: PredictMemeModalProps) {
+export default function PredictMemeModal({
+  campaignId,
+}: PredictMemeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [prediction, setPrediction] = useState<"viral" | "flop" | null>(null);
 

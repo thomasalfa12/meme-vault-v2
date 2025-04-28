@@ -1,18 +1,18 @@
-import Navbar from "../components/Navbar";
-import Hero from "../components/Hero";
-import ProblemSolution from "../components/ProblemSolution";
-import HowItWorks from "../components/HowItWorks";
-import TopCampaign from "../components/TopCampaign";
-import Footer from "../components/Footer";
+import Navbar from "../components/sections/Navbar";
+import Hero from "../components/sections/Hero";
+import TopCampaign from "../components/sections/TopCampaign";
+import ProblemSolution from "../components/sections/ProblemSolution";
+import HowItWorks from "../components/sections/HowItWorks";
+import Footer from "../components/sections/Footer";
 
 export default function Home() {
   return (
     <div>
       <Navbar />
       <Hero />
+      <TopCampaign />
       <ProblemSolution />
       <HowItWorks />
-      <TopCampaign />
       <Footer /> {/* <<< Tambahkan Footer */}
     </div>
   );
