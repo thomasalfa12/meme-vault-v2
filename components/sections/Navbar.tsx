@@ -1,16 +1,55 @@
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
+import { FiMenu } from "react-icons/fi";
+import { useState } from "react";
 
-export default function Navbar() {
+const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   return (
-    <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-black/10 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">aPriori</h1>
-        <Link href="/campaign">
-          <button className="px-5 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-semibold hover:brightness-125 transition">
-            Campaign
+    <nav className="flex items-center justify-between px-4 md:px-6 py-4 bg-[#090E1A] border-b border-gray-700 w-full">
+      {/* Left - Logo & Menu */}
+      <div className="flex items-center space-x-2">
+        <button className="text-white mr-2 md:hidden" onClick={toggleSidebar}>
+          <FiMenu size={24} />
+        </button>
+        <h1 className="text-white font-bold text-lg hidden md:block">
+          Meme Vault
+        </h1>
+      </div>
+
+      {/* Center - Search */}
+      <div
+        className={`flex-1 mx-2 md:mx-6 transition-all duration-300 ${
+          isSearchOpen ? "max-w-md" : "max-w-0 overflow-hidden"
+        }`}
+      >
+        <input
+          type="text"
+          placeholder="Search campaigns..."
+          className="w-full bg-gray-800 text-white py-2 px-4 rounded-full focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
+        />
+      </div>
+
+      {/* Right - Create & Connect Wallet */}
+      <div className="flex items-center space-x-2 md:space-x-4">
+        <button
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
+          className="text-white text-xl focus:outline-none"
+        >
+          🔍
+        </button>
+
+        <Link href="/create-campaign">
+          <button className="bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-90 text-white font-semibold py-2 px-4 rounded-full transition">
+            Create
           </button>
         </Link>
+
+        <ConnectButton showBalance={false} accountStatus="address" />
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

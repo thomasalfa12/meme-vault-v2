@@ -22,21 +22,8 @@ export default function HeroAnimation() {
       </div>
     </motion.div>
 
-<motion.div
-className="absolute inset-0 z-0"
-animate={{
-  backgroundColor: [
-    "rgba(10, 10, 20, 1)",
-    "rgba(20, 20, 30, 1)",
-    "rgba(10, 10, 20, 1)",
-  ],
-}}
-transition={{
-  duration: 20,
-  repeat: Infinity,
-  repeatType: "reverse",
-}}
-/>
+    
 
+    
   );
 }

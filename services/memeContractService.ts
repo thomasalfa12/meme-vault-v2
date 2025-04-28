@@ -9,7 +9,7 @@ interface CreateCampaignParams {
   goalAmount: string;
   deadline: string;
   creator: string;
-  signer: any; // nanti kita benerin
+  signer: any; 
 }
 
 export async function createMemeCampaign({
