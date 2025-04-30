@@ -1,25 +1,39 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useAccount, useConfig } from "wagmi";
+import { readContract } from "wagmi/actions";
+import {
+  MEME_CAMPAIGN_MANAGER_ADDRESS,
+  MemeCampaignManagerABI,
+} from "../../utils/constants";
 import Tilt from "react-parallax-tilt";
 import Image from "next/image";
 
-const campaigns = [
-  { name: "Meme Rocket", img: "/campaigns/meme-rocket.jpg" },
-  { name: "Pepe World", img: "/campaigns/pepe-world.jpg" },
-  { name: "Shiba Universe", img: "/campaigns/shiba-universe.jpg" },
-  { name: "Cat Coin", img: "/campaigns/cat-coin.jpg" },
-  { name: "Fomo Inu", img: "/campaigns/fomo-inu.jpg" },
-  { name: "Doggy Party", img: "/campaigns/doggy-party.jpg" },
-  { name: "Elon Pepe", img: "/campaigns/elon-pepe.jpg" },
-  { name: "Moon Shiba", img: "/campaigns/moon-shiba.jpg" },
-  { name: "Space Cat", img: "/campaigns/space-cat.jpg" },
-  { name: "Lambo Memes", img: "/campaigns/lambo-memes.jpg" },
-];
-
 export default function TopCampaigns() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { address } = useAccount();
+  const config = useConfig();
+  const [campaigns, setCampaigns] = useState<any[]>([]);
 
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      const data = await readContract(config, {
+        abi: MemeCampaignManagerABI,
+        address: MEME_CAMPAIGN_MANAGER_ADDRESS,
+        functionName: "getCampaigns",
+      });
+      setCampaigns(data as any[]);
+    } catch (err) {
+      console.error("Error fetching campaigns:", err);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  // Auto scroll effect
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -36,9 +50,8 @@ export default function TopCampaigns() {
     };
 
     animationId = requestAnimationFrame(move);
-
     return () => cancelAnimationFrame(animationId);
-  }, []);
+  }, [campaigns]);
 
   return (
     <section className="py-20 bg-gradient-to-b from-[#0D1B3E] via-[#0D1B3E] to-[#070707] text-white overflow-hidden relative">
@@ -51,9 +64,7 @@ export default function TopCampaigns() {
       <div
         ref={containerRef}
         className="flex space-x-8 w-full overflow-hidden"
-        style={{
-          whiteSpace: "nowrap",
-        }}
+        style={{ whiteSpace: "nowrap" }}
       >
         {[...campaigns, ...campaigns].map((campaign, idx) => (
           <div key={idx} className="flex-shrink-0">
@@ -68,15 +79,23 @@ export default function TopCampaigns() {
               glareMaxOpacity={0.2}
               className="bg-gradient-to-br from-blue-700 via-purple-800 to-black rounded-2xl overflow-hidden shadow-xl min-w-[300px] hover:scale-105 transition-transform duration-500"
             >
-              <Image
-                src={campaign.img}
-                alt={campaign.name}
-                width={300}
-                height={200}
-                className="object-cover w-full h-48"
-              />
+              {campaign.imageUrl ? (
+                <Image
+                  src={campaign.imageUrl}
+                  alt={campaign.title || "Campaign"}
+                  width={500}
+                  height={500}
+                  className="object-cover w-full h-48"
+                />
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-gray-800 text-4xl">
+                  🎯
+                </div>
+              )}
               <div className="p-4">
-                <h3 className="text-lg font-semibold">{campaign.name}</h3>
+                <h3 className="text-lg font-semibold truncate">
+                  {campaign.title || "Untitled"}
+                </h3>
               </div>
             </Tilt>
           </div>

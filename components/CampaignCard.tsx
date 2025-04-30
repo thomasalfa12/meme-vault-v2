@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface CampaignCardProps {
   campaign: any;
@@ -27,9 +28,19 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign }) => {
 
       <div>
         {/* Cover Placeholder */}
-        <div className="h-40 bg-gray-800 rounded-xl mb-4 flex items-center justify-center text-4xl">
-          🎯
-        </div>
+        {campaign.imageUrl ? (
+          <Image
+            src={campaign.imageUrl}
+            alt="Campaign"
+            width={500}
+            height={500}
+            className="rounded-xl object-cover"
+          />
+        ) : (
+          <div className="h-40 bg-gray-800 rounded-xl mb-4 flex items-center justify-center text-4xl">
+            🎯
+          </div>
+        )}
 
         {/* Title */}
         <h2 className="text-xl font-bold text-white truncate">

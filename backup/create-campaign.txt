@@ -1,0 +1,159 @@
+"use client";
+
+import { parseEther } from "viem/utils";
+import { useState } from "react";
+import { useWalletClient } from "wagmi";
+
+import {
+  MEME_CAMPAIGN_MANAGER_ADDRESS,
+  MemeCampaignManagerABI,
+} from "../utils/constants";
+
+export default function CreateCampaign() {
+  const { data: walletClient } = useWalletClient();
+
+  const [title, setTitle] = useState("");
+  const [tokenName, setTokenName] = useState("");
+  const [tokenSymbol, setTokenSymbol] = useState("");
+  const [goalAmount, setGoalAmount] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleCreate = async () => {
+    if (!walletClient) {
+      alert("Wallet not connected!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const txHash = await walletClient.writeContract({
+        address: MEME_CAMPAIGN_MANAGER_ADDRESS,
+        abi: MemeCampaignManagerABI,
+        functionName: "createCampaign",
+        args: [
+          title,
+          tokenName,
+          tokenSymbol,
+          parseEther(goalAmount),
+          Math.floor(new Date(deadline).getTime() / 1000),
+        ],
+      });
+
+      alert(`Campaign created successfully! TX Hash: ${txHash}`);
+
+      setTitle("");
+      setTokenName("");
+      setTokenSymbol("");
+      setGoalAmount("");
+      setDeadline("");
+      setImage(null);
+      setPreview(null);
+    } catch (error) {
+      console.error("Error creating campaign:", error);
+      alert("Failed to create campaign!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a23] to-black flex items-center justify-center p-6">
+      <div className="flex flex-col md:flex-row w-full max-w-6xl gap-10">
+        {/* Preview Card */}
+        <div className="flex-1 bg-[#161622] rounded-2xl p-6 shadow-lg flex flex-col items-center">
+          {preview ? (
+            <img
+              src={preview}
+              alt="Campaign"
+              className="w-40 h-40 object-cover rounded-xl mb-4"
+            />
+          ) : (
+            <div className="w-40 h-40 bg-gray-800 rounded-xl flex items-center justify-center mb-4 text-gray-500">
+              No Image
+            </div>
+          )}
+          <h2 className="text-white text-2xl font-bold">
+            {tokenSymbol || "TICKER"}
+          </h2>
+          <p className="text-gray-400 mt-2">{title || "Campaign Title"}</p>
+          <p className="text-gray-500 mt-1">
+            {goalAmount ? `${goalAmount} ETH Goal` : "0 ETH Goal"}
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="flex-1 bg-[#161622] rounded-2xl p-8 shadow-lg">
+          <h1 className="text-2xl font-bold text-white mb-6">
+            Ready to Launch?
+          </h1>
+
+          <div className="flex flex-col gap-4">
+            <label className="text-white font-medium">Add Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="text-white"
+            />
+
+            <input
+              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
+              placeholder="Campaign Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <input
+              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
+              placeholder="Token Name"
+              value={tokenName}
+              onChange={(e) => setTokenName(e.target.value)}
+            />
+
+            <input
+              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
+              placeholder="Token Symbol (max 6 chars)"
+              value={tokenSymbol}
+              maxLength={6}
+              onChange={(e) => setTokenSymbol(e.target.value)}
+            />
+
+            <input
+              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
+              placeholder="Goal Amount (ETH)"
+              value={goalAmount}
+              onChange={(e) => setGoalAmount(e.target.value)}
+            />
+
+            <input
+              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
+              type="date"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+
+            <button
+              onClick={handleCreate}
+              disabled={loading}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition disabled:opacity-50"
+            >
+              {loading ? "Creating..." : "Create Campaign"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
