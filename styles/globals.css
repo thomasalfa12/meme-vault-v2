@@ -105,3 +105,17 @@ a {
 .animate-spin-slower {
   animation: spin-slower 60s linear infinite;
 }
+.slider-glow::-webkit-slider-thumb {
+  background: #00ff99;
+  box-shadow: 0 0 10px #00ff99;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.slider-glow::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 20px #00ff99;
+}
+
+.slider-glow::-moz-range-thumb {
+  background: #00ff99;
+  box-shadow: 0 0 10px #00ff99;
+}

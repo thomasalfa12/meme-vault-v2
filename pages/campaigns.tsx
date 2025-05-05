@@ -25,7 +25,7 @@ export default function CampaignsPage() {
       });
       setCampaigns(data as any[]);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch campaigns", err);
     } finally {
       setLoading(false);
     }

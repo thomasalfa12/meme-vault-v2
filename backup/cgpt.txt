@@ -1,0 +1,20 @@
+Versi	Task	Status	Detail Progress
+v0.1	Deploy smart contract basic: MemeCampaignManager + UnlockerTokenFactory	✅ Done	Smart contracts sukses di-deploy
+v0.2	Integrasi frontend: Create campaign form + browse campaigns	✅ Done	UI/UX Create Campaign, Explore Campaign, Sidebar & Navbar sudah responsif
+v0.3	Tambahkan Uniswap v4 hooks untuk Unlocker Token pools	⏳ Belum	Rencana integrasi Uniswap v4 di token pool
+v0.4	Implement FHE (Fully Homomorphic Encryption) untuk prediction voting	⏳ Belum	Tambah fitur voting prediksi pakai FHE
+v0.5	Launch alpha version + invite only testnet	⏳ Belum	Private alpha launch untuk user terbatas
+v1.0	Public launch with DAO governance & token voting	⏳ Belum	Public release dan pengelolaan campaign lewat DAO voting
+
+pada project saya akan ada 2 mode degen dan normal
+
+A. mode normal, setiap goalAmount ETH tercapai, akan tergenerate token dengan maksimal 1Milyar token, tiap user yang berkontribusi akan mendapatkan 75% dari maksimal supply yang berbanding lurus dengan jumlah kontribusi yang dilakukan, dengan minimal kontribusi 0.0005 ETH, 25% dari maksimal supply akan dibagikan secara random kepada seluruh partisipan dengan persentasi pembagian secara acak tetapi early user ada kemungkinan untuk mendapatkan alokasi persentasi yang lebih banyak tetapi tidak pasti
+
+B. mode degen, sekali kontribusi partisipan hanya bisa 0.0005 ETH, tetapi bisa dilakukan berulang, nantinya para partisipan akan mendapatkan alokasi secara random dan acak dari maximal supply 1Milyar token, dengan ctt alokasi tertinggi yan bisa didapat sekali nberkontribusi hanya 10% dari max supply tetapi ini tidak selalu, bisa saja hanya 4/5/8% intinya random, dan acak
+
+target eth yang berhasil tercapai akan otomatis dijadikan LP di Uniswap V4 dan di burn, dimana 2.5% dari target akan masuk ke saldo developer atau team bukan creator token, creator nantinya hanya akan bisa mendapat share dari fee tranksaksi yang bisa di custom persentasinya, berapa untuk burn community berapa untuk creator, sesuai dengan prinsip di uniswap V4
+
+saat deadline tercapat yaitu waltu dan tanggal, otomatis vault akan selesai dan didistribusikan ke partisipan
+
+untuk 
+
