@@ -21,7 +21,7 @@ export default function TopCampaigns() {
       const data = await readContract(config, {
         abi: MemeCampaignManagerABI,
         address: MEME_CAMPAIGN_MANAGER_ADDRESS,
-        functionName: "getCampaigns",
+        functionName: "getCampaignSummaries",
       });
       setCampaigns(data as any[]);
     } catch (err) {

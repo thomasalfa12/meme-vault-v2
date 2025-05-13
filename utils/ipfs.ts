@@ -7,7 +7,10 @@ export async function uploadFileToIPFS(file: File): Promise<string> {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to upload to IPFS");
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to upload to IPFS: ${errorText}`);
+  }
 
   const data = await res.json();
   return data.url;

@@ -2,7 +2,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['ipfs.io', 'placekitten.com'], // tambahkan ipfs.io
+    domains: ["ipfs.io", "nftstorage.link", "cloudflare-ipfs.com"], // tambahkan ipfs.io
   },
 };
 

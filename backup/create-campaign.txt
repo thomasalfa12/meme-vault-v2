@@ -1,156 +1,326 @@
 "use client";
 
-import { parseEther } from "viem/utils";
 import { useState } from "react";
-import { useWalletClient } from "wagmi";
-
+import { useRouter } from "next/navigation";
+import { toast, Toaster } from "sonner";
+import { parseEther } from "viem";
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { uploadFileToIPFS } from "../utils/ipfs";
 import {
   MEME_CAMPAIGN_MANAGER_ADDRESS,
   MemeCampaignManagerABI,
 } from "../utils/constants";
+import Image from "next/image";
+import DualFeeSlider from "../components/ui/DualFeeSlider";
 
-export default function CreateCampaign() {
+const MODE = {
+  SIMPLE: 0,
+  DEGEN_A: 1,
+  NORMAL: 2,
+} as const;
+
+export default function CreateCampaignPage() {
+  const router = useRouter();
   const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
+  const { address } = useAccount();
+
+  const [step, setStep] = useState<"simple" | "advanced">("simple");
+  const [mode, setMode] = useState<"Normal" | "DegenA">("Normal");
+  const [creatorFee, setCreatorFee] = useState(85);
 
   const [title, setTitle] = useState("");
-  const [tokenName, setTokenName] = useState("");
+  const [coinName, setCoinName] = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [goalAmount, setGoalAmount] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  const handleCreate = async () => {
-    if (!walletClient) {
-      alert("Wallet not connected!");
+  const resetForm = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setUploadedImageUrl("");
+    setTitle("");
+    setCoinName("");
+    setTokenSymbol("");
+    setGoalAmount("");
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast.error("Image must be less than 1MB");
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img =
+        typeof window !== "undefined" ? new (window.Image as any)() : null;
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        const x = (img.width - size) / 2;
+        const y = (img.height - size) / 2;
+        ctx.drawImage(img, x, y, size, size, 0, 0, size, size);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const croppedFile = new File([blob], file.name, { type: file.type });
+          setImageFile(croppedFile);
+          setImagePreview(URL.createObjectURL(croppedFile));
+        }, file.type);
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const validateInputs = (): boolean => {
+    if (!walletClient || !publicClient) {
+      toast.error("Wallet or public client not available.");
+      return false;
+    }
+    if (!imageFile) {
+      toast.error("Please upload an image.");
+      return false;
+    }
+    if (!coinName || !tokenSymbol || !goalAmount) {
+      toast.error("Please fill all required fields.");
+      return false;
+    }
+    if (!/^[A-Z]{2,6}$/.test(tokenSymbol)) {
+      toast.error("Token symbol must be 2-6 uppercase letters.");
+      return false;
+    }
+    const parsedGoal = parseFloat(goalAmount);
+    if (isNaN(parsedGoal) || parsedGoal <= 3) {
+      toast.error("Goal must be greater than 3 ETH");
+      return false;
+    }
+    return true;
+  };
+
+  const handleCreate = async () => {
+    if (!validateInputs()) return;
+
     try {
       setLoading(true);
+      toast.loading("Uploading image to IPFS...");
+      const imageUrl = await uploadFileToIPFS(imageFile!);
+      setUploadedImageUrl(imageUrl);
+      toast.dismiss();
 
-      const txHash = await walletClient.writeContract({
+      toast.loading("Creating campaign onchain...");
+      const goalInWei = parseEther(goalAmount);
+      const modeEnum =
+        step === "simple"
+          ? MODE.SIMPLE
+          : mode === "DegenA"
+          ? MODE.DEGEN_A
+          : MODE.NORMAL;
+
+      const fee = step === "simple" ? 85 : creatorFee;
+      const communityFee = 100 - fee;
+
+      const txHash = await walletClient!.writeContract({
         address: MEME_CAMPAIGN_MANAGER_ADDRESS,
         abi: MemeCampaignManagerABI,
         functionName: "createCampaign",
         args: [
-          title,
-          tokenName,
+          coinName,
           tokenSymbol,
-          parseEther(goalAmount),
-          Math.floor(new Date(deadline).getTime() / 1000),
+          imageUrl,
+          goalInWei,
+          modeEnum,
+          fee,
+          communityFee,
         ],
+        value: step === "advanced" ? parseEther("0.00077") : undefined,
       });
 
-      alert(`Campaign created successfully! TX Hash: ${txHash}`);
+      toast.dismiss();
+      toast.loading("Waiting for confirmation...");
+      await publicClient!.waitForTransactionReceipt({ hash: txHash });
 
-      setTitle("");
-      setTokenName("");
-      setTokenSymbol("");
-      setGoalAmount("");
-      setDeadline("");
-      setImage(null);
-      setPreview(null);
-    } catch (error) {
-      console.error("Error creating campaign:", error);
-      alert("Failed to create campaign!");
+      toast.dismiss();
+      toast.success("Campaign created!");
+      resetForm();
+      router.push("/campaigns");
+    } catch (err) {
+      console.error(err);
+      toast.dismiss();
+      toast.error("Failed to create campaign.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0a23] to-black flex items-center justify-center p-6">
-      <div className="flex flex-col md:flex-row w-full max-w-6xl gap-10">
-        {/* Preview Card */}
-        <div className="flex-1 bg-[#161622] rounded-2xl p-6 shadow-lg flex flex-col items-center">
-          {preview ? (
-            <img
-              src={preview}
-              alt="Campaign"
-              className="w-40 h-40 object-cover rounded-xl mb-4"
-            />
-          ) : (
-            <div className="w-40 h-40 bg-gray-800 rounded-xl flex items-center justify-center mb-4 text-gray-500">
-              No Image
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a23] to-black p-6 flex flex-col items-center justify-center">
+      <Toaster position="top-center" />
+      <div className="max-w-6xl w-full flex flex-col md:flex-row gap-8">
+        <div className="w-full md:w-2/3 space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-white text-2xl font-bold">Create Campaign</h1>
+            <div className="space-x-2">
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  step === "simple"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 text-gray-300"
+                }`}
+                onClick={() => {
+                  setStep("simple");
+                  setMode("Normal");
+                  setCreatorFee(85);
+                }}
+              >
+                Simple
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  step === "advanced"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 text-gray-300"
+                }`}
+                onClick={() => setStep("advanced")}
+              >
+                Advanced
+              </button>
             </div>
-          )}
-          <h2 className="text-white text-2xl font-bold">
-            {tokenSymbol || "TICKER"}
-          </h2>
-          <p className="text-gray-400 mt-2">{title || "Campaign Title"}</p>
-          <p className="text-gray-500 mt-1">
-            {goalAmount ? `${goalAmount} ETH Goal` : "0 ETH Goal"}
-          </p>
+          </div>
+
+          <div className="bg-[#161622] rounded-2xl p-6">
+            <div className="flex flex-col gap-4">
+              <label className="text-white font-medium">Upload Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="text-white"
+              />
+              {imagePreview && (
+                <Image
+                  src={imagePreview}
+                  alt="preview"
+                  width={100}
+                  height={100}
+                  className="rounded-lg"
+                />
+              )}
+
+              <input
+                placeholder="Campaign Title"
+                className="bg-gray-800 p-3 rounded-xl text-white"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <input
+                placeholder="Coin Name"
+                className="bg-gray-800 p-3 rounded-xl text-white"
+                value={coinName}
+                onChange={(e) => setCoinName(e.target.value)}
+              />
+              <input
+                placeholder="Token Symbol"
+                maxLength={6}
+                className="bg-gray-800 p-3 rounded-xl text-white"
+                value={tokenSymbol}
+                onChange={(e) => setTokenSymbol(e.target.value)}
+              />
+              <input
+                placeholder="Goal Amount (ETH)"
+                type="number"
+                min="0"
+                className="bg-gray-800 p-3 rounded-xl text-white"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(e.target.value)}
+              />
+
+              {step === "advanced" && (
+                <>
+                  <div className="text-white font-medium">Campaign Mode</div>
+                  <div className="flex gap-2">
+                    {["Normal", "DegenA"].map((opt) => (
+                      <button
+                        key={opt}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          mode === opt
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300"
+                        }`}
+                        onClick={() => setMode(opt as "Normal" | "DegenA")}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label className="text-white font-medium">
+                    Creator Fee Split
+                  </label>
+                  <DualFeeSlider value={creatorFee} onChange={setCreatorFee} />
+                </>
+              )}
+
+              {step === "simple" && (
+                <div className="text-sm text-gray-400">
+                  Mode: Normal | Creator Fee 85% | Burn 15% | Free
+                </div>
+              )}
+
+              {walletClient ? (
+                <button
+                  onClick={handleCreate}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition disabled:opacity-50 mt-4"
+                >
+                  {loading
+                    ? "Creating..."
+                    : `Create Campaign (${
+                        step === "simple" ? "Free" : "0.00077 ETH"
+                      })`}
+                </button>
+              ) : (
+                <ConnectButton label="Sign in" />
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Form */}
-        <div className="flex-1 bg-[#161622] rounded-2xl p-8 shadow-lg">
-          <h1 className="text-2xl font-bold text-white mb-6">
-            Ready to Launch?
-          </h1>
+        <div className="w-full md:w-1/3 bg-[#161622] rounded-2xl p-4 text-white h-fit">
+          <div className="aspect-square bg-gray-900 rounded-lg overflow-hidden mb-4 flex items-center justify-center">
+            {imagePreview ? (
+              <Image
+                src={imagePreview}
+                alt="Preview"
+                width={300}
+                height={300}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <span className="text-gray-600">No Image</span>
+            )}
+          </div>
 
-          <div className="flex flex-col gap-4">
-            <label className="text-white font-medium">Add Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="text-white"
-            />
-
-            <input
-              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
-              placeholder="Campaign Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <input
-              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
-              placeholder="Token Name"
-              value={tokenName}
-              onChange={(e) => setTokenName(e.target.value)}
-            />
-
-            <input
-              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
-              placeholder="Token Symbol (max 6 chars)"
-              value={tokenSymbol}
-              maxLength={6}
-              onChange={(e) => setTokenSymbol(e.target.value)}
-            />
-
-            <input
-              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
-              placeholder="Goal Amount (ETH)"
-              value={goalAmount}
-              onChange={(e) => setGoalAmount(e.target.value)}
-            />
-
-            <input
-              className="bg-gray-800 p-3 rounded-xl text-white placeholder-gray-400"
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-            />
-
-            <button
-              onClick={handleCreate}
-              disabled={loading}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition disabled:opacity-50"
-            >
-              {loading ? "Creating..." : "Create Campaign"}
-            </button>
+          <div className="text-lg font-bold mb-1">{tokenSymbol || "TOKEN"}</div>
+          <div className="text-xs text-gray-400 mb-2">CA: 0x000...0000</div>
+          <div className="text-sm text-purple-400 mb-1">
+            🚀 Fair Launch Active
+          </div>
+          <div className="text-sm text-gray-300">
+            Goal: {goalAmount || "0"} ETH
+          </div>
+          <div className="text-sm text-gray-300">
+            Creator Fee: {creatorFee}% | Community: {100 - creatorFee}%
           </div>
         </div>
       </div>
