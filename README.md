@@ -1,4 +1,4 @@
-# 🧠 MemeVault v2 - Launchpad Meme dengan FHE & Uniswap V4 Hooks
+# 🧠 monaunch.fun - Launchpad Meme dengan FHE & Uniswap V4 Hooks
 
 MemeVault v2 adalah platform **launchpad meme Web3** inovatif dengan keunggulan utama yaitu integrasi **Uniswap v4 AMM & Custom Hooks** yang powerful dan fleksibel. Proyek ini dibangun untuk jaringan **Monad** sebagai target utama, namun saat ini sedang **dideploy pada Base Sepolia** karena **Monad belum mendukung Uniswap v4 Hooks** sepenuhnya.
 
